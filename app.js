@@ -12,7 +12,6 @@ const express = require("express");
 const multer = require("multer");
 const axios = require("axios");
 const cors = require("cors");
-const session = require("express-session");
 const pdfParse = require("pdf-parse");
 const mammoth = require("mammoth");
 const fs = require("fs");
@@ -28,22 +27,9 @@ const app = express();
 // Middleware
 app.use(cors({
   origin: true,
-  credentials: true
 }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-
-// Session middleware
-app.use(session({
-  secret: process.env.SESSION_SECRET || "cv-analyzer-secret-key-change-this",
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: false, // set true if using HTTPS
-    httpOnly: true,
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-  }
-}));
 
 // Setup upload directory
 const uploadDir = path.join(__dirname, "uploads");

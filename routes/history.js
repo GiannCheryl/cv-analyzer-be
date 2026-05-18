@@ -1,21 +1,10 @@
 const express = require("express");
 const { db } = require("../db");
+const authenticate = require("../middleware/auth");
 
 const router = express.Router();
 
-const requireAuth = async (req, res, next) => {
-  if (!req.session.userId) {
-    return res.status(401).json({ error: "Akses ditolak. Silakan login terlebih dahulu." });
-  }
-  const users = await db.all("SELECT id, name, email FROM users WHERE id = ?", [req.session.userId]);
-  if (users.length === 0) {
-    return res.status(401).json({ error: "User tidak valid." });
-  }
-  req.user = users[0];
-  next();
-};
-
-router.get("/", requireAuth, async (req, res) => {
+router.get("/", authenticate, async (req, res) => {
   try {
     const history = await db.all(
       `SELECT id, file_name, job_desc, domain, match_score, match_percentage, 
@@ -24,7 +13,7 @@ router.get("/", requireAuth, async (req, res) => {
       FROM analysis_history 
       WHERE user_id = ? 
       ORDER BY created_at DESC`,
-      [req.user.id]
+      [req.userId]
     );
 
     const parsedHistory = history.map(item => ({
@@ -42,7 +31,7 @@ router.get("/", requireAuth, async (req, res) => {
   }
 });
 
-router.post("/", requireAuth, async (req, res) => {
+router.post("/", authenticate, async (req, res) => {
   try {
     const {
       file_name, job_desc, domain, match_score, match_percentage,
@@ -55,7 +44,7 @@ router.post("/", requireAuth, async (req, res) => {
          auto_summary, skills_analysis, cv_summary, role_compatibility, action_plan)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        req.user.id, file_name, job_desc, domain, match_score, match_percentage,
+        req.userId, file_name, job_desc, domain, match_score, match_percentage,
         auto_summary, JSON.stringify(skills_analysis), JSON.stringify(cv_summary),
         JSON.stringify(role_compatibility), JSON.stringify(action_plan),
       ]
@@ -71,12 +60,12 @@ router.post("/", requireAuth, async (req, res) => {
   }
 });
 
-router.delete("/:id", requireAuth, async (req, res) => {
+router.delete("/:id", authenticate, async (req, res) => {
   try {
     const { id } = req.params;
     const items = await db.all(
       "SELECT id FROM analysis_history WHERE id = ? AND user_id = ?",
-      [id, req.user.id]
+      [id, req.userId]
     );
 
     if (items.length === 0) {

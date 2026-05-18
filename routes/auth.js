@@ -1,8 +1,14 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 const { db } = require("../db");
 
 const router = express.Router();
+
+// Helper buat token
+function generateToken(userId) {
+  return jwt.sign({ userId }, process.env.SESSION_SECRET, { expiresIn: '7d' });
+}
 
 router.post("/register", async (req, res) => {
   try {
@@ -25,9 +31,10 @@ router.post("/register", async (req, res) => {
       [name, email, hashedPassword]
     );
 
-    req.session.userId = result.lastID;
+    const token = generateToken(result.lastID);
     res.status(201).json({
       message: "Registrasi berhasil!",
+      token,
       user: { id: result.lastID, name, email },
     });
   } catch (err) {
@@ -54,9 +61,10 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Email atau password salah." });
     }
 
-    req.session.userId = user.id;
+    const token = generateToken(user.id);
     res.json({
       message: "Login berhasil!",
+      token,
       user: { id: user.id, name: user.name, email: user.email },
     });
   } catch (err) {
@@ -65,12 +73,9 @@ router.post("/login", async (req, res) => {
   }
 });
 
-router.get("/me", async (req, res) => {
+router.get("/me", authenticate, async (req, res) => {
   try {
-    if (!req.session.userId) {
-      return res.status(401).json({ error: "Belum login." });
-    }
-    const users = await db.all("SELECT id, name, email, created_at FROM users WHERE id = ?", [req.session.userId]);
+    const users = await db.all("SELECT id, name, email, created_at FROM users WHERE id = ?", [req.userId]);
     if (users.length === 0) {
       return res.status(404).json({ error: "User tidak ditemukan." });
     }
@@ -81,12 +86,8 @@ router.get("/me", async (req, res) => {
 });
 
 router.post("/logout", (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      return res.status(500).json({ error: "Gagal logout." });
-    }
-    res.json({ message: "Logout berhasil." });
-  });
+  // JWT tidak perlu server-side logout, client hapus token saja
+  res.json({ message: "Logout berhasil." });
 });
 
 module.exports = router;
