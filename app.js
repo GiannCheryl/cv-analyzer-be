@@ -1,4 +1,13 @@
-// app.js - CV Analyzer Backend with MySQL (XAMPP) - Session Based Auth
+process.on('uncaughtException', (err) => {
+  console.error('❌ UNCAUGHT EXCEPTION:', err.message);
+  console.error(err.stack);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ UNHANDLED REJECTION:', reason);
+});
+
 const express = require("express");
 const multer = require("multer");
 const axios = require("axios");
@@ -513,13 +522,11 @@ app.use((err, req, res, next) => {
 // --------------------------------------------------
 const PORT = process.env.PORT || 5000;
 
-// Initialize database then start server
 initDatabase().then(() => {
   app.listen(PORT, () => {
-    console.log("Server running on port " + PORT);
-    console.log("Upload directory: " + uploadDir);
-    console.log("Database: MySQL (XAMPP)");
+    console.log("✅ Server running on port " + PORT);
   });
 }).catch(err => {
-  console.error("Failed to start server:", err);
+  console.error("❌ Failed to start:", err);
+  process.exit(1);
 });

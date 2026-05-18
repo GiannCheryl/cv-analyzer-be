@@ -10,9 +10,10 @@ if (!fs.existsSync(dbDir)) {
 const dbPath = path.join(dbDir, 'database.sqlite');
 const db = new Database(dbPath);
 
-// better-sqlite3 pakai WAL mode untuk performa lebih baik
+// Mode WAL untuk performa lebih baik
 db.pragma('journal_mode = WAL');
 
+// Wrapper dengan Promise supaya cocok dengan app.js kamu
 function run(sql, params = []) {
   return new Promise((resolve, reject) => {
     try {
@@ -49,44 +50,47 @@ function get(sql, params = []) {
   });
 }
 
+// Return Promise supaya cocok dengan app.js
 function initDatabase() {
-  try {
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        email TEXT NOT NULL UNIQUE,
-        password TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+  return new Promise((resolve, reject) => {
+    try {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS users (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          email TEXT NOT NULL UNIQUE,
+          password TEXT NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
 
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS analysis_history (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        file_name TEXT NOT NULL,
-        job_desc TEXT NOT NULL,
-        domain TEXT NOT NULL,
-        match_score REAL NOT NULL,
-        match_percentage INTEGER NOT NULL,
-        auto_summary TEXT,
-        skills_analysis TEXT,
-        cv_summary TEXT,
-        role_compatibility TEXT,
-        action_plan TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-      )
-    `);
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS analysis_history (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          file_name TEXT NOT NULL,
+          job_desc TEXT NOT NULL,
+          domain TEXT NOT NULL,
+          match_score REAL NOT NULL,
+          match_percentage INTEGER NOT NULL,
+          auto_summary TEXT,
+          skills_analysis TEXT,
+          cv_summary TEXT,
+          role_compatibility TEXT,
+          action_plan TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
 
-    console.log("SQLite database initialized successfully");
-    console.log("Database file:", dbPath);
-  } catch (err) {
-    console.error("Database initialization error:", err.message);
-    process.exit(1);
-  }
+      console.log("✅ Database initialized");
+      resolve();
+    } catch (err) {
+      console.error("❌ Database error:", err.message);
+      reject(err);
+    }
+  });
 }
 
 module.exports = { db: { run, all, get }, initDatabase };
