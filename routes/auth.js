@@ -8,7 +8,8 @@ const router = express.Router();
 
 // Helper buat token
 function generateToken(userId) {
-  return jwt.sign({ userId }, process.env.SESSION_SECRET, { expiresIn: '7d' });
+  const secret = process.env.SESSION_SECRET || "fallback-secret-key-minimal-32-characters-long";
+  return jwt.sign({ userId }, secret, { expiresIn: '7d' });
 }
 
 router.post("/register", async (req, res) => {
