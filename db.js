@@ -2,12 +2,15 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 
-const dbDir = path.join(__dirname, 'data');
+// ✅ FIX: Gunakan path absolut atau dari environment variable
+const dbDir = process.env.DATABASE_DIR || path.join(__dirname, 'data');
 if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
 
-const dbPath = path.join(dbDir, 'database.sqlite');
+const dbPath = process.env.DATABASE_PATH || path.join(dbDir, 'database.sqlite');
+console.log("📁 Database path:", dbPath);  // Debug log
+
 const db = new Database(dbPath);
 
 // Mode WAL untuk performa lebih baik
@@ -50,7 +53,6 @@ function get(sql, params = []) {
   });
 }
 
-// Return Promise supaya cocok dengan app.js
 function initDatabase() {
   return new Promise((resolve, reject) => {
     try {
@@ -84,7 +86,7 @@ function initDatabase() {
         )
       `);
 
-      console.log("✅ Database initialized");
+      console.log("✅ Database initialized at:", dbPath);
       resolve();
     } catch (err) {
       console.error("❌ Database error:", err.message);
